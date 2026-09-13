@@ -1,0 +1,18 @@
+# Build artifacts
+build/
+cmake-build-*/
+
+# Plasmoid packages
+*.plasmoid
+
+# Editor / OS files
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# Qt / KDE
+.qmake.stash
+moc_*
+.opencode/
