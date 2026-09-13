@@ -5,8 +5,8 @@
                           http://www.kde.org/standards/kcfg/1.0/kcfg.xsd">
     <kcfgfile name=""/>
     <group name="General">
-        <entry name="placeholder" type="String">
-            <default></default>
-        </entry>
+        <entry name="herdrCmd" type="String"><default>@HERDR_BIN@</default></entry>
+        <entry name="refreshMs" type="Int"><default>3000</default><min>500</min></entry>
+        <entry name="multiplexAware" type="Bool"><default>true</default></entry>
     </group>
 </kcfg>

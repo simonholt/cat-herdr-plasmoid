@@ -9,9 +9,21 @@ if [ ! -f "$PACKAGE_DIR/metadata.json" ]; then
 	exit 1
 fi
 
+# Resolve herdr path and template main.xml
+HERDR_CMD=$(command -v herdr 2>/dev/null) || {
+	echo "Error: herdr not found on PATH"
+	exit 1
+}
+
+TMPDIR=$(mktemp -d)
+trap "rm -rf $TMPDIR" EXIT
+cp -r "$PACKAGE_DIR"/* "$TMPDIR/"
+ESCAPED=$(printf '%s\n' "$HERDR_CMD" | sed 's/[&\\/]/\\&/g')
+sed -i "s|@HERDR_BIN@|$ESCAPED|g" "$TMPDIR/contents/config/main.xml"
+
 echo "Installing Cat Herdr plasmoid..."
-kpackagetool6 --type Plasma/Applet --upgrade "$PACKAGE_DIR" 2>/dev/null ||
-	kpackagetool6 --type Plasma/Applet --install "$PACKAGE_DIR"
+kpackagetool6 --type Plasma/Applet --upgrade "$TMPDIR" 2>/dev/null ||
+	kpackagetool6 --type Plasma/Applet --install "$TMPDIR"
 
 echo "Installing icon..."
 ICON_DIR="$HOME/.local/share/icons/hicolor/scalable/apps"
