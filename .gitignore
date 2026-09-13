@@ -1,0 +1,14 @@
+build/
+cmake-build-*/
+*.plasmoid
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+.qmake.stash
+moc_*
+.opencode/
+.ruff_cache/
+.claude/settings.local.json

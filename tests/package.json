@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "scripts": {
+    "test": "cd .. && node --test tests/model.test.cjs tests/claude-reporter.test.mjs tests/cursor-reporter.test.mjs tests/copilot-reporter.test.mjs tests/opencode-reporter.test.mjs"
+  }
+}

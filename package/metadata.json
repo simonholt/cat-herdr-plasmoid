@@ -1,0 +1,19 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Id": "com.github.simonholt.catherder",
+        "Name": "Cat Herdr",
+        "Description": "Live AI agent states from Herdr — see who's working, who's blocked, and who needs you.",
+        "Icon": "catherder",
+        "Authors": [
+            { "Name": "Simon Holt" }
+        ],
+        "Category": "System Information",
+        "License": "MIT",
+        "Version": "0.1.0",
+        "Website": "https://github.com/simonholt/cat-herdr-plasmoid",
+        "BugReportUrl": "https://github.com/simonholt/cat-herdr-plasmoid/issues",
+        "FormFactors": ["desktop", "horizontal", "vertical"]
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}
