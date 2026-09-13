@@ -6,7 +6,7 @@
 
 <p align="center">Herding AI coding agents is like herding cats. This is the shepherd's crook.</p>
 
-A KDE Plasma 6 widget that watches [Herdr](https://github.com/simonholt/herdr)-managed AI coding agents. See who is working, blocked, idle, or waiting for you without switching between terminals.
+A KDE Plasma 6 widget that watches [Herdr](https://github.com/herdrdev/herdr)-managed AI coding agents. See who is working, blocked, idle, or waiting for you without switching between terminals.
 
 ## What it looks like
 
