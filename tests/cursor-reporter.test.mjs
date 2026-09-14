@@ -34,7 +34,7 @@ test("pickModel prefers model_id over model", () => {
 	assert.equal(pickModel({}), undefined);
 });
 
-test("runHook does not report Cursor sessionStart stand-in models", async () => {
+test("runHook clears stale metadata for Cursor sessionStart stand-in models", async () => {
 	const calls = [];
 	const requestFn = async (method, params) => {
 		calls.push({ method, params });
@@ -56,10 +56,8 @@ test("runHook does not report Cursor sessionStart stand-in models", async () => 
 		},
 		requestFn,
 	);
-	assert.equal(
-		calls.filter((c) => c.method === "pane.report_metadata").length,
-		0,
-	);
+	assert.equal(calls.filter((c) => c.method === "pane.report_metadata").length, 1);
+	assert.deepEqual(calls.at(-1).params.tokens, { model: null });
 });
 
 test("pickSessionId prefers session_id over conversation_id", () => {
@@ -147,4 +145,39 @@ test("runHook reports metadata for a matching cursor pane", async () => {
 			tokens: { model: "composer-2.5" },
 		},
 	});
+});
+
+test("runHook clears stale metadata on model-less sessionStart", async () => {
+	const calls = [];
+	await runHook(
+		{ hook_event_name: "sessionStart", session_id: "conv-1" },
+		{ HERDR_ENV: "1", HERDR_SOCKET_PATH: "/tmp/s" },
+		async (method, params) => {
+			calls.push({ method, params });
+			if (method === "pane.list") {
+				return { result: { panes: [{ pane_id: "p", agent: "cursor", agent_session: { value: "conv-1" } }] } };
+			}
+			return {};
+		},
+	);
+
+	assert.deepEqual(calls[1].params.tokens, { model: null });
+});
+
+test("runHook does not clear a known startup model", async () => {
+	const calls = [];
+	await runHook(
+		{ hook_event_name: "sessionStart", model: "composer-2.5", session_id: "conv-1" },
+		{ HERDR_ENV: "1", HERDR_SOCKET_PATH: "/tmp/s" },
+		async (method, params) => {
+			calls.push({ method, params });
+			if (method === "pane.list") {
+				return { result: { panes: [{ pane_id: "p", agent: "cursor", agent_session: { value: "conv-1" } }] } };
+			}
+			return {};
+		},
+	);
+
+	assert.equal(calls.length, 2);
+	assert.deepEqual(calls[1].params.tokens, { model: "composer-2.5" });
 });

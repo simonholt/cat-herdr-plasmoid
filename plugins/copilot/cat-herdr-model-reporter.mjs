@@ -27,6 +27,11 @@ export function pickSessionId(hook) {
 	return nonEmptyString(hook?.sessionId) || nonEmptyString(hook?.session_id);
 }
 
+export function isStartupHook(hook) {
+	const name = hook?.hook_event_name || hook?.event_name;
+	return typeof name === "string" && name.toLowerCase() === "sessionstart";
+}
+
 export function eventsPathForSession(sessionId, env = process.env) {
 	const home = env.COPILOT_HOME || path.join(env.HOME ?? "", ".copilot");
 	return path.join(home, "session-state", sessionId, "events.jsonl");
@@ -91,13 +96,17 @@ export async function runHook(hook, env, requestFn, deps = {}) {
 	if (!inHerdr(env)) return;
 	const sessionId = pickSessionId(hook);
 	if (!sessionId) return;
+	const startup = isStartupHook(hook);
 	let model;
-	try {
-		model = modelForSession(sessionId, env, deps.readModel || lastModelChange);
-	} catch {
-		return;
+	if (startup && nonEmptyString(hook?.model)) model = hook.model;
+	if (!startup) {
+		try {
+			model = modelForSession(sessionId, env, deps.readModel || lastModelChange);
+		} catch {
+			return;
+		}
+		if (!model) return;
 	}
-	if (!model) return;
 
 	let panes;
 	try {
@@ -108,6 +117,26 @@ export async function runHook(hook, env, requestFn, deps = {}) {
 	}
 	const paneId = resolvePaneId(panes, sessionId, env.HERDR_PANE_ID);
 	if (!paneId) return;
+	if (startup && !model) {
+		try {
+			await requestFn("pane.report_metadata", {
+				pane_id: paneId,
+				source: SOURCE,
+				agent: AGENT,
+				tokens: { model: null },
+			});
+		} catch {
+			// Hooks are best effort and must never affect Copilot.
+		}
+	}
+	if (!model) {
+		try {
+			model = modelForSession(sessionId, env, deps.readModel || lastModelChange);
+		} catch {
+			return;
+		}
+		if (!model) return;
+	}
 	try {
 		await requestFn("pane.report_metadata", {
 			pane_id: paneId,

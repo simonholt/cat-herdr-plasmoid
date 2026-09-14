@@ -46,6 +46,11 @@ export function pickSessionId(hook) {
 	return nonEmptyString(hook?.session_id) || nonEmptyString(hook?.conversation_id);
 }
 
+export function isStartupHook(hook) {
+	const name = hook?.hook_event_name || hook?.event_name;
+	return typeof name === "string" && name.toLowerCase() === "sessionstart";
+}
+
 export function resolvePaneId(panes, sessionId, envPaneId) {
 	if (Array.isArray(panes) && sessionId) {
 		const match = panes.find(
@@ -71,7 +76,8 @@ export async function runHook(hook, env, requestFn) {
 	if (!inHerdr(env)) return;
 	if (isSubagent(hook)) return;
 	const model = pickModel(hook);
-	if (!model) return;
+	const startup = isStartupHook(hook);
+	if (!model && !startup) return;
 
 	let panes;
 	try {
@@ -87,6 +93,19 @@ export async function runHook(hook, env, requestFn) {
 		env.HERDR_PANE_ID,
 	);
 	if (!paneId) return;
+	if (startup && !model) {
+		try {
+			await requestFn("pane.report_metadata", {
+				pane_id: paneId,
+				source: SOURCE,
+				agent: AGENT,
+				tokens: { model: null },
+			});
+		} catch {
+			// Socket unreachable — nothing to do.
+		}
+		return;
+	}
 
 	try {
 		await requestFn("pane.report_metadata", {

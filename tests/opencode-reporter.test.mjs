@@ -156,3 +156,7 @@ test("emitted metadata keeps canonical tokens.model and carries app version sepa
 		model: "anthropic/claude-sonnet",
 	});
 });
+
+test("reportTokens uses a null model patch to clear stale metadata", () => {
+	assert.deepEqual(reportTokens(null, "1.2.3"), { model: null });
+});

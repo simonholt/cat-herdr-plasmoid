@@ -45,6 +45,10 @@ export function pickSessionId(hook) {
 	return nonEmptyString(hook?.session_id);
 }
 
+export function isStartupHook(hook) {
+	return typeof hook?.hook_event_name === "string" && hook.hook_event_name.toLowerCase() === "sessionstart";
+}
+
 export function normalize(value) {
 	return typeof value === "string" ? value.trim().replace(/\s+/g, " ") : "";
 }
@@ -166,11 +170,35 @@ export async function runHook(hook, env, requestFn, deps = {}) {
 
 	const sessionId = pickSessionId(hook);
 	if (!sessionId) return;
+	const startup = isStartupHook(hook);
 
 	const sleep =
 		deps.sleep || ((ms) => new Promise((r) => setTimeout(r, ms)));
 
 	let model = pickModel(hook);
+	let paneId;
+	if (startup && !model) {
+		let panes;
+		try {
+			const response = await requestFn("pane.list", {});
+			panes = response?.result?.panes;
+		} catch {
+			panes = undefined;
+		}
+		paneId = resolvePaneId(panes, sessionId, env.HERDR_PANE_ID);
+		if (paneId) {
+			try {
+				await requestFn("pane.report_metadata", {
+					pane_id: paneId,
+					source: SOURCE,
+					agent: AGENT,
+					tokens: { model: null },
+				});
+			} catch {
+				// Socket unreachable — nothing to do.
+			}
+		}
+	}
 	if (!model) {
 		const readEntries =
 			deps.readEntries ||
@@ -187,15 +215,16 @@ export async function runHook(hook, env, requestFn, deps = {}) {
 	}
 	if (!model) return;
 
-	let panes;
-	try {
-		const response = await requestFn("pane.list", {});
-		panes = response?.result?.panes;
-	} catch {
-		panes = undefined;
+	if (!paneId) {
+		let panes;
+		try {
+			const response = await requestFn("pane.list", {});
+			panes = response?.result?.panes;
+		} catch {
+			panes = undefined;
+		}
+		paneId = resolvePaneId(panes, sessionId, env.HERDR_PANE_ID);
 	}
-
-	const paneId = resolvePaneId(panes, sessionId, env.HERDR_PANE_ID);
 	if (!paneId) return;
 
 	try {

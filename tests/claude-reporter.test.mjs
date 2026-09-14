@@ -294,6 +294,27 @@ test("runHook reports the SessionStart payload model for the matching pane", asy
 	});
 });
 
+test("runHook clears stale metadata before detecting a model on model-less SessionStart", async () => {
+	const calls = [];
+	const requestFn = async (method, params) => {
+		calls.push({ method, params });
+		if (method === "pane.list") {
+			return { result: { panes: [{ pane_id: "p", agent: "claude", agent_session: { value: "mine" } }] } };
+		}
+		return { result: { type: "ok" } };
+	};
+
+	await runHook(
+		{ hook_event_name: "SessionStart", session_id: "mine" },
+		{ HERDR_ENV: "1", HERDR_SOCKET_PATH: "/tmp/s" },
+		requestFn,
+		{ sleep: noSleep, readEntries: async () => [] },
+	);
+
+	assert.equal(calls[1].method, "pane.report_metadata");
+	assert.deepEqual(calls[1].params.tokens, { model: null });
+});
+
 test("runHook reads the transcript when the payload carries no model", async () => {
 	const calls = [];
 	const requestFn = async (method, params) => {

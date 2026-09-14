@@ -7,9 +7,9 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 SRC="$SCRIPT_DIR/cat-herdr-tui-attached-metadata.js"
 DEST_DIR="$HOME/.config/opencode"
-DEST="$DEST_DIR/herdr-tui-attached-metadata.js"
+DEST="$DEST_DIR/cat-herdr-tui-attached-metadata.js"
 TUI_JSONC="$DEST_DIR/tui.jsonc"
-ENTRY="./herdr-tui-attached-metadata.js"
+ENTRY="./cat-herdr-tui-attached-metadata.js"
 
 if ! command -v jq >/dev/null 2>&1; then
 	echo "Error: jq not found on PATH" >&2

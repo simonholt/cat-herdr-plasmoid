@@ -185,6 +185,7 @@ export function sessionIDFromRoute(route) {
 }
 
 export function reportTokens(model, appVersion) {
+  if (model === null) return { model: null };
   const tokens = { model };
   if (nonEmptyString(appVersion)) tokens[VERSION_TOKEN] = appVersion;
   return tokens;
@@ -220,6 +221,7 @@ export default {
     }
 
     let selectedSessionID;
+    let initialized = false;
     const reported = { model: undefined, version: undefined };
     let modelRetryIndex = 0;
     let nextModelAttemptAt = 0;
@@ -237,21 +239,27 @@ export default {
         const route = api.route.current;
         const sessionID = sessionIDFromRoute(route);
 
-        if (!sessionID) {
+        const sessionReplaced = !initialized || sessionID !== selectedSessionID;
+        if (sessionReplaced) {
           selectedSessionID = undefined;
           reported.model = undefined;
           reported.version = undefined;
           modelRetryIndex = 0;
           nextModelAttemptAt = 0;
+          initialized = true;
+          selectedSessionID = sessionID;
+        }
+
+        if (!sessionID) {
+          if (sessionReplaced) await request("pane.report_metadata", { tokens: reportTokens(null) });
           return;
         }
 
-        if (sessionID !== selectedSessionID) {
-          selectedSessionID = sessionID;
-          reported.model = undefined;
-          reported.version = undefined;
-          modelRetryIndex = 0;
-          nextModelAttemptAt = 0;
+        if (sessionReplaced) {
+          // OpenCode does not put a resolved model on the route/session event;
+          // clear before querying messages so an old session cannot remain
+          // visible while the new session is being detected.
+          await request("pane.report_metadata", { tokens: reportTokens(null) });
         }
 
         if (Date.now() < nextModelAttemptAt) {

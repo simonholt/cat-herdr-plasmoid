@@ -100,3 +100,27 @@ test("runHook preserves canonical metadata for an event-backed model", async () 
 		},
 	});
 });
+
+test("runHook clears stale metadata before startup event-log detection", async () => {
+	const calls = [];
+	await runHook(
+		{ hook_event_name: "sessionStart", sessionId: "s" },
+		{ HERDR_ENV: "1", HERDR_SOCKET_PATH: "/tmp/s" },
+		async (method, params) => {
+			calls.push({ method, params });
+			if (method === "pane.list") {
+				return { result: { panes: [{ pane_id: "p", agent: "copilot", agent_session: { value: "s" } }] } };
+			}
+			return { result: { type: "ok" } };
+		},
+		{ readModel: () => "gpt-5" },
+	);
+
+	assert.deepEqual(calls.map((call) => call.method), [
+		"pane.list",
+		"pane.report_metadata",
+		"pane.report_metadata",
+	]);
+	assert.deepEqual(calls[1].params.tokens, { model: null });
+	assert.deepEqual(calls[2].params.tokens, { model: "gpt-5" });
+});
